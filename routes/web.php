@@ -2,5 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => ['message' => 'you have reached our server.']);
-
+// Web routes - only for web interface
+Route::get('/', function () {
+    return view('welcome');
+});

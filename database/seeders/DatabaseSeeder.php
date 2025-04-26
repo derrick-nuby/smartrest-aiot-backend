@@ -11,16 +11,6 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
-<<<<<<< HEAD
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-    }
-}
-=======
         // First seed the permissions
         $this->call([
             PermissionSeeder::class,
@@ -59,4 +49,3 @@ class DatabaseSeeder extends Seeder
         }
     }
 }
->>>>>>> 7aa654f (feat: implement dafault and custom permission & role management with CRUD, user authentication and authorization)

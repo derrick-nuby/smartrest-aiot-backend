@@ -3,16 +3,20 @@
 return [
     'roles' => [
         'admin' => [
-            'create',
-            'read',
-            'update',
-            'delete',
-            'manage_users',
-            'manage_roles',
-            'manage_permissions'
+            'view_users',
+            'edit_users',
+            'update_user',
+            'delete_user',
+            'manage_permissions',
+            'view_patients',
+            'manage_patients',
+            'view_appointments',
+            'manage_appointments',
+            'view_medical_records',
+            'manage_medical_records'
         ],
         'doctor' => [
-            'read',
+            'view_users',
             'view_patients',
             'manage_patients',
             'view_appointments',
@@ -21,13 +25,13 @@ return [
             'manage_medical_records'
         ],
         'patient' => [
-            'read',
+            'view_users',
             'view_appointments',
             'manage_appointments',
             'view_medical_records'
         ],
         'customer' => [
-            'read',
+            'view_users',
             'view_appointments',
             'manage_appointments'
         ]

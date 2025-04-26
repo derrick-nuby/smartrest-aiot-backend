@@ -9,33 +9,18 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\HasPermissions;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasPermissions;
 
     protected $primaryKey = 'user_id';
     public $incrementing = false;
     protected $keyType = 'integer';
 
-<<<<<<< HEAD
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-<<<<<<< HEAD
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
 
-=======
     // Make sure User model is fillable
-    
-=======
->>>>>>> 7aa654f (feat: implement dafault and custom permission & role management with CRUD, user authentication and authorization)
     protected $fillable = [
         'user_id',
         'email',
@@ -47,17 +32,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_email_verified',
         'permissions'
     ];
-
-<<<<<<< HEAD
-
->>>>>>> f945b34 (Initial commit with Docker support)
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-=======
->>>>>>> 7aa654f (feat: implement dafault and custom permission & role management with CRUD, user authentication and authorization)
     protected $hidden = [
         'password_hash',
         'remember_token',
@@ -88,31 +62,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification()
     {
-        $this->notify(new \App\Notifications\VerifyEmail);
-    }
-
-    public function hasPermission($permission)
-    {
-        // Admins have all permissions
-        if ($this->role === 'admin') {
-            return true;
-        }
-
-        // Get role-based permissions from config
-        $rolePermissions = Config::get('permissions.roles.' . $this->role, []);
-
-        // Check if the permission is in the role's default permissions
-        if (in_array($permission, $rolePermissions)) {
-            return true;
-        }
-
-        // Check if the permission is in the user's custom permissions
-        $customPermissions = $this->getCustomPermissions();
-        if (in_array($permission, $customPermissions)) {
-            return true;
-        }
-
-        return false;
+        $this->notify(new \App\Notifications\CustomVerifyEmail);
     }
 
     public function addPermission($permission)
