@@ -29,6 +29,10 @@ Route::get('/verify-email/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
      ->name('verification.send')
      ->middleware('throttle:6,1');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::get('/reset-password-form/{token}', [AuthController::class, 'showResetPasswordForm'])
+     ->name('password.reset.form');
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
