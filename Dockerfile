@@ -1,55 +1,70 @@
-FROM php:8.2-fpm
+FROM php:8.2-cli AS deps
 
-# Set working directory
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Install dependencies
+# Install required system packages including git, unzip, and zip
 RUN apt-get update && apt-get install -y \
-    build-essential \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
     libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
     git \
-    curl \
+    unzip \
+    zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure and install the gd extension
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd
+
+# Copy Composer from the composer:lts image
+COPY --from=composer:lts /usr/bin/composer /usr/bin/composer
+
+# Run composer install with verbose output for debugging
+RUN --mount=type=bind,source=composer.json,target=composer.json \
+    --mount=type=bind,source=composer.lock,target=composer.lock \
+    --mount=type=cache,target=/tmp/cache \
+    composer install --no-dev --no-interaction --no-scripts -vvv
+
+FROM php:8.2-apache AS final
+
+# Install required system packages including git, unzip, zip, and PostgreSQL development libraries
+RUN apt-get update && apt-get install -y \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libzip-dev \
+    libonig-dev \
     libpq-dev \
-    nginx \
-    supervisor
+    git \
+    unzip \
+    zip \
+    && rm -rf /var/lib/apt/lists/*
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Configure and install PHP extensions: gd, pdo_pgsql, pgsql, mbstring, and zip
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd pdo_pgsql pgsql mbstring zip
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath
+# Use the production php.ini
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Set Apache DocumentRoot to /var/www/html/public
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf
 
-# Copy application code
-COPY . /var/www/html
+# Enable the rewrite module for Laravel routing
+RUN a2enmod rewrite
 
-# Install dependencies
-RUN composer install --optimize-autoloader --no-dev
+# Copy dependencies from the deps stage and set ownership to www-data
+COPY --from=deps --chown=www-data:www-data /app/vendor/ /var/www/html/vendor
 
-# Copy Nginx configuration
-COPY docker/nginx/nginx.conf /etc/nginx/sites-available/default
+# Copy application files and set ownership to www-data
+COPY --chown=www-data:www-data ./ /var/www/html
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage
+# Copy the entrypoint script and make it executable
+COPY --chown=www-data:www-data entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Generate Laravel application key
-RUN php artisan key:generate --force
-RUN php artisan config:cache
-RUN php artisan route:cache
-RUN php artisan view:cache
+# Set the entrypoint to the script
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-# Copy supervisor configuration
-COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Expose port 80
-EXPOSE 80
-
-# Start supervisor
-CMD ["/usr/bin/supervisord"]
+# Run as www-data user
+USER www-data
