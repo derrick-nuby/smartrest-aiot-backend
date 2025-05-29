@@ -29,11 +29,11 @@ jobs:
         run: |
           composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      # Debug: List backend directory
-      - name: List backend directory
+      # Debug: List root directory
+      - name: List project directory
         run: ls -l
 
-      # Run tests (optional, uncomment if you want tests)
+      # Optionally run your tests
       # - name: Run Tests
       #   run: php artisan test
 
@@ -41,7 +41,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: smartRest-backend
+          name: smartRest-artifact
           path: .
 
   docker:
@@ -49,16 +49,16 @@ jobs:
     needs: build
 
     steps:
-      # Check out the repository
+      # Check out the repository (needed for Dockerfile, etc.)
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Download the build artifact from the previous job
+      # Download the build artifact
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: smartRest-backend
-          path: backend
+          name: smartRest-artifact
+          path: .
 
       # Login to Docker Hub
       - name: Login to Docker Hub
@@ -67,11 +67,11 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      # Build and push Docker image
+      # Build and push Docker image from the repo root
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
+          context: .
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/smartRest-backend:latest
